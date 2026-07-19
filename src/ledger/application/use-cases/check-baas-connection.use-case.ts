@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BaaSGateway } from 'src/application/ports/baas-gateway.port';
+import { BaaSGateway } from '../ports/baas-gateway.port';
 
 @Injectable()
 export class CheckBaasConnectionUseCase {

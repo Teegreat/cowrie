@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { LedgerController } from './ledger.controller';
-import { CheckBaasConnectionUseCase } from 'src/application/ledger/use-cases/check-baas-connection.use-case';
-import { BaaSGateway } from 'src/application/ports/baas-gateway.port';
-import { MockBaaSGateway } from 'src/infrastructure/baas/mock-baas.gateway';
+import { LedgerController } from './interface/ledger.controller';
+import { CheckBaasConnectionUseCase } from './application/use-cases/check-baas-connection.use-case';
+import { BaaSGateway } from './application/ports/baas-gateway.port';
+import { MockBaaSGateway } from './infrastructure/baas/mock-baas.gateway';
 
 @Module({
   controllers: [LedgerController],

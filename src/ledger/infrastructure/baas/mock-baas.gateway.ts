@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BaaSGateway } from 'src/application/ports/baas-gateway.port';
+import { BaaSGateway } from 'src/ledger/application/ports/baas-gateway.port';
 
 @Injectable()
 export class MockBaaSGateway extends BaaSGateway {

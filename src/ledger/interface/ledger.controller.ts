@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { CheckBaasConnectionUseCase } from 'src/application/ledger/use-cases/check-baas-connection.use-case';
+import { CheckBaasConnectionUseCase } from '../application/use-cases/check-baas-connection.use-case';
 
 @Controller('ledger')
 export class LedgerController {
