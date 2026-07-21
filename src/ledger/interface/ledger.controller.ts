@@ -1,5 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CheckBaasConnectionUseCase } from '../application/use-cases/check-baas-connection.use-case';
+import { CheckMoneyDto } from './dto/check-money.dto';
+import { Money } from 'src/shared-kernel/money.value-object';
 
 @Controller('ledger')
 export class LedgerController {
@@ -14,5 +16,15 @@ export class LedgerController {
     return {
       status: await this.checkBaasConnection.execute(),
     };
+  }
+
+  @Post('money-check')
+  moneyCheck(@Body() dto: CheckMoneyDto) {
+    // Money.of() throws DomainException on an invalid currency format —
+    // the DTO already guaranteed minorUnits is an int and currency is a
+    // 3-char string, so anything that throws here is a business-rule
+    // violation, not a shape problem.
+    const money = Money.of(dto.minorUnits, dto.currency);
+    return { formatted: money.toString() };
   }
 }
