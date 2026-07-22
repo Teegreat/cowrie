@@ -54,4 +54,12 @@ export class Money {
   toString(): string {
     return `${(this.minorUnits / 100).toFixed(2)} ${this.currency}`;
   }
+
+  get minorUnitsValue(): number {
+    return this.minorUnits;
+  }
+
+  get currencyCode(): string {
+    return this.currency;
+  }
 }

@@ -2,11 +2,17 @@ import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CheckBaasConnectionUseCase } from '../application/use-cases/check-baas-connection.use-case';
 import { CheckMoneyDto } from './dto/check-money.dto';
 import { Money } from 'src/shared-kernel/money.value-object';
+import { PostTransactionDto } from './dto/post-transaction.dto';
+import { CreateAccountDto } from './dto/create-account.dto';
+import { CreateAccountUseCase } from '../application/use-cases/create-account.use-case';
+import { PostTransactionUseCase } from '../application/use-cases/post-transaction.use-case';
 
 @Controller('ledger')
 export class LedgerController {
   constructor(
     private readonly checkBaasConnection: CheckBaasConnectionUseCase,
+    private readonly createAccount: CreateAccountUseCase,
+    private readonly postTransaction: PostTransactionUseCase,
   ) {}
 
   @Get('baas-check')
@@ -26,5 +32,24 @@ export class LedgerController {
     // violation, not a shape problem.
     const money = Money.of(dto.minorUnits, dto.currency);
     return { formatted: money.toString() };
+  }
+
+  @Post('accounts')
+  async createAccountEndpoint(@Body() dto: CreateAccountDto) {
+    const id = await this.createAccount.execute(dto);
+    return { id };
+  }
+
+  @Post('transactions')
+  async postTransactionEndpoint(@Body() dto: PostTransactionDto) {
+    // The controller's job: translate raw DTO primitives into real domain
+    // types (Money) before the application layer ever sees them.
+    const postings = dto.postings.map((posting) => ({
+      accountId: posting.accountId,
+      money: Money.of(posting.minorUnits, posting.currency),
+      direction: posting.direction,
+    }));
+    const id = await this.postTransaction.execute(postings);
+    return { id };
   }
 }
