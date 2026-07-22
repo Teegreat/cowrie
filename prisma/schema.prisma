@@ -47,4 +47,7 @@ model Posting {
   currency      String
   direction     PostingDirection
   createdAt     DateTime          @default(now())
+
+  @@index([accountId])
+  @@index([transactionId])
 }
