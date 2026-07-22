@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LedgerRepository } from '../ports/ledger-respository.port';
+import { LedgerRepository } from '../ports/ledger-repository.port';
 import {
   LedgerTransaction,
   PostingInput,

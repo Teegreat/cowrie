@@ -2,7 +2,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
-import { LedgerRepository } from 'src/ledger/application/ports/ledger-respository.port';
+import { LedgerRepository } from 'src/ledger/application/ports/ledger-repository.port';
 import { LedgerTransaction } from 'src/ledger/domain/ledger-transaction';
 
 @Injectable()

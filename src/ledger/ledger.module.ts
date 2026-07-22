@@ -5,7 +5,7 @@ import { BaaSGateway } from './application/ports/baas-gateway.port';
 import { MockBaaSGateway } from './infrastructure/baas/mock-baas.gateway';
 import { CreateAccountUseCase } from './application/use-cases/create-account.use-case';
 import { PostTransactionUseCase } from './application/use-cases/post-transaction.use-case';
-import { LedgerRepository } from './application/ports/ledger-respository.port';
+import { LedgerRepository } from './application/ports/ledger-repository.port';
 import { PrismaLedgerRepository } from './infrastructure/persistence/prisma-ledger.repository';
 
 @Module({
