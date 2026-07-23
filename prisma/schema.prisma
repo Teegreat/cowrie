@@ -51,3 +51,22 @@ model Posting {
   @@index([accountId])
   @@index([transactionId])
 }
+
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  hashedPassword String
+  createdAt      DateTime       @default(now())
+  refreshTokens  RefreshToken[]
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  hashedToken String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
