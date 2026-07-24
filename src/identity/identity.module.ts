@@ -18,6 +18,13 @@ import { PrismaRefreshTokenRepository } from './infrastructure/persistence/prism
 import { ListUsersUseCase } from './application/use-cases/list-users.use-case';
 import { GetUserByIdUseCase } from './application/use-cases/get-user-by-id.use-case';
 import { RolesGuard } from './interface/guards/role.guard';
+import { CreateProfileUseCase } from './application/use-cases/create-profile.use-case';
+import { GetProfileUseCase } from './application/use-cases/get-profile.use-case';
+import { UpgradeToTier2UseCase } from './application/use-cases/upgrade-to-tier2.use-case';
+import { UpgradeToTier3UseCase } from './application/use-cases/upgrade-to-tier3.use-case';
+import { ProfileRepository } from './application/ports/profile-repository.port';
+import { PrismaProfileRepository } from './infrastructure/persistence/prisma-profile.repository';
+import { ProfileController } from './interface/profile.controller';
 
 @Module({
   imports: [
@@ -29,7 +36,7 @@ import { RolesGuard } from './interface/guards/role.guard';
       }),
     }),
   ],
-  controllers: [IdentityController],
+  controllers: [IdentityController, ProfileController],
   providers: [
     RegisterUserUseCase,
     LoginUserUseCase,
@@ -37,12 +44,17 @@ import { RolesGuard } from './interface/guards/role.guard';
     LogoutUseCase,
     ListUsersUseCase,
     GetUserByIdUseCase,
+    CreateProfileUseCase,
+    GetProfileUseCase,
+    UpgradeToTier2UseCase,
+    UpgradeToTier3UseCase,
     JwtStrategy,
     RolesGuard,
     { provide: PasswordHasher, useClass: Argon2PasswordHasher },
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: TokenIssuer, useClass: JwtTokenIssuer },
     { provide: RefreshTokenRepository, useClass: PrismaRefreshTokenRepository },
+    { provide: ProfileRepository, useClass: PrismaProfileRepository },
   ],
   exports: [UserRepository],
 })

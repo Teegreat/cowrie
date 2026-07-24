@@ -28,6 +28,12 @@ enum UserRole {
   ADMIN
 }
 
+enum KycTier {
+  TIER_1
+  TIER_2
+  TIER_3
+}
+
 model Account {
   id          String      @id @default(uuid())
   name        String
@@ -64,6 +70,7 @@ model User {
   role           UserRole       @default(CUSTOMER)
   createdAt      DateTime       @default(now())
   refreshTokens  RefreshToken[]
+  profile        Profile?
 }
 
 model RefreshToken {
@@ -76,3 +83,21 @@ model RefreshToken {
 
   @@index([userId])
 }
+
+model Profile {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id])
+  firstName   String
+  middleName  String?
+  lastName    String
+  phoneNumber String   @unique
+  dateOfBirth DateTime
+  kycTier     KycTier  @default(TIER_1)
+  bvn         String   @unique
+  nin         String?  @unique
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
