@@ -14,7 +14,12 @@ export class PrismaUserRepository extends UserRepository {
   async findByEmail(email: string): Promise<User | null> {
     const record = await this.prisma.user.findUnique({ where: { email } });
     if (!record) return null;
-    return User.existing(record.id, record.email, record.hashedPassword);
+    return User.existing(
+      record.id,
+      record.email,
+      record.hashedPassword,
+      record.role,
+    );
   }
 
   async create(user: User): Promise<User> {
@@ -22,7 +27,12 @@ export class PrismaUserRepository extends UserRepository {
       const created = await this.prisma.user.create({
         data: { email: user.email, hashedPassword: user.hashedPassword },
       });
-      return User.existing(created.id, created.email, created.hashedPassword);
+      return User.existing(
+        created.id,
+        created.email,
+        created.hashedPassword,
+        created.role,
+      );
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -37,6 +47,18 @@ export class PrismaUserRepository extends UserRepository {
   async findById(id: string): Promise<User | null> {
     const record = await this.prisma.user.findUnique({ where: { id } });
     if (!record) return null;
-    return User.existing(record.id, record.email, record.hashedPassword);
+    return User.existing(
+      record.id,
+      record.email,
+      record.hashedPassword,
+      record.role,
+    );
+  }
+
+  async findAll(): Promise<User[]> {
+    const records = await this.prisma.user.findMany();
+    return records.map((r) =>
+      User.existing(r.id, r.email, r.hashedPassword, r.role),
+    );
   }
 }

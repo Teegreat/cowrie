@@ -23,6 +23,11 @@ enum PostingDirection {
   CREDIT
 }
 
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
 model Account {
   id          String      @id @default(uuid())
   name        String
@@ -56,6 +61,7 @@ model User {
   id             String         @id @default(uuid())
   email          String         @unique
   hashedPassword String
+  role           UserRole       @default(CUSTOMER)
   createdAt      DateTime       @default(now())
   refreshTokens  RefreshToken[]
 }

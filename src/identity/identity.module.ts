@@ -15,6 +15,9 @@ import { RefreshAccessTokenUseCase } from './application/use-cases/refresh-acces
 import { LogoutUseCase } from './application/use-cases/logout.use-case';
 import { RefreshTokenRepository } from './application/ports/refresh-token-repository.port';
 import { PrismaRefreshTokenRepository } from './infrastructure/persistence/prisma-refresh-token.repository';
+import { ListUsersUseCase } from './application/use-cases/list-users.use-case';
+import { GetUserByIdUseCase } from './application/use-cases/get-user-by-id.use-case';
+import { RolesGuard } from './interface/guards/role.guard';
 
 @Module({
   imports: [
@@ -32,7 +35,10 @@ import { PrismaRefreshTokenRepository } from './infrastructure/persistence/prism
     LoginUserUseCase,
     RefreshAccessTokenUseCase,
     LogoutUseCase,
+    ListUsersUseCase,
+    GetUserByIdUseCase,
     JwtStrategy,
+    RolesGuard,
     { provide: PasswordHasher, useClass: Argon2PasswordHasher },
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: TokenIssuer, useClass: JwtTokenIssuer },

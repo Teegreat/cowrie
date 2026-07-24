@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { RegisterUserUseCase } from '../application/use-cases/register-user.use-case';
 import { LoginUserUseCase } from '../application/use-cases/login-user.use-case';
 import { RegisterDto } from './dto/register.dto';
@@ -8,6 +8,11 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RefreshAccessTokenUseCase } from '../application/use-cases/refresh-access-token.use-case';
 import { LogoutUseCase } from '../application/use-cases/logout.use-case';
+import { ListUsersUseCase } from '../application/use-cases/list-users.use-case';
+import { GetUserByIdUseCase } from '../application/use-cases/get-user-by-id.use-case';
+import { UserRole } from '../domain/user';
+import { RolesGuard } from './guards/role.guard';
+import { Roles } from './decorators/role.decorators';
 
 @Controller('identity')
 export class IdentityController {
@@ -16,6 +21,8 @@ export class IdentityController {
     private readonly loginUser: LoginUserUseCase,
     private readonly refreshAccessToken: RefreshAccessTokenUseCase,
     private readonly logoutUser: LogoutUseCase,
+    private readonly listUsers: ListUsersUseCase,
+    private readonly getUserById: GetUserByIdUseCase,
   ) {}
 
   @Post('register')
@@ -41,7 +48,26 @@ export class IdentityController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@CurrentUser() user: { id: string; email: string }) {
+  me(@CurrentUser() user: { id: string; email: string; role: UserRole }) {
     return user;
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('users')
+  listAllUsers() {
+    return this.listUsers.execute();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('users/:id')
+  getUser(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: { id: string; email: string; role: UserRole },
+  ) {
+    return this.getUserById.execute({
+      requestedId: id,
+      requestingUser: currentUser,
+    });
   }
 }

@@ -8,3 +8,17 @@ export class DomainException extends Error {
     this.name = 'DomainException';
   }
 }
+
+export class ForbiddenDomainException extends DomainException {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ForbiddenDomainException';
+  }
+}
+
+export class NotFoundDomainException extends DomainException {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundDomainException';
+  }
+}
