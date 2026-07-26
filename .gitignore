@@ -56,3 +56,6 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+# Personal course-planning doc, not part of the public project
+/docs/The_Fintech_Backend_Engineer_Handbook_Master_Curriculum.md
