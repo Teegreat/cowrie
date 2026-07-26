@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -14,6 +15,15 @@ async function bootstrap() {
       transform: true, // turns the raw JSON body into a real CheckMoneyDto instance, so @IsInt() etc. run against actual typed values
     }),
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('Cowrie API')
+    .setDescription('Cowrie fintech backedn - API documentation')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api-docs', app, document);
 
   app.useGlobalFilters(new DomainExceptionFilter());
 

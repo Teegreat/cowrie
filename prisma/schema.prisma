@@ -34,6 +34,17 @@ enum KycTier {
   TIER_3
 }
 
+enum ScreeningStatus {
+  CLEARED
+  FLAGGED
+  BLOCKED
+}
+
+enum ComplianceCaseStatus {
+  OPEN
+  RESOLVED
+}
+
 model Account {
   id          String      @id @default(uuid())
   name        String
@@ -64,13 +75,15 @@ model Posting {
 }
 
 model User {
-  id             String         @id @default(uuid())
-  email          String         @unique
-  hashedPassword String
-  role           UserRole       @default(CUSTOMER)
-  createdAt      DateTime       @default(now())
-  refreshTokens  RefreshToken[]
-  profile        Profile?
+  id                      String           @id @default(uuid())
+  email                   String           @unique
+  hashedPassword          String
+  role                    UserRole         @default(CUSTOMER)
+  createdAt               DateTime         @default(now())
+  refreshTokens           RefreshToken[]
+  profile                 Profile?
+  complianceCases         ComplianceCase[] @relation("ComplianceCaseSubject")
+  resolvedComplianceCases ComplianceCase[] @relation("ComplianceCaseResolver")
 }
 
 model RefreshToken {
@@ -85,19 +98,35 @@ model RefreshToken {
 }
 
 model Profile {
-  userId      String   @id
-  user        User     @relation(fields: [userId], references: [id])
-  firstName   String
-  middleName  String?
-  lastName    String
-  phoneNumber String   @unique
-  dateOfBirth DateTime
-  kycTier     KycTier  @default(TIER_1)
-  bvn         String   @unique
-  nin         String?  @unique
-  address     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  userId          String          @id
+  user            User            @relation(fields: [userId], references: [id])
+  firstName       String
+  middleName      String?
+  lastName        String
+  phoneNumber     String          @unique
+  dateOfBirth     DateTime
+  kycTier         KycTier         @default(TIER_1)
+  bvn             String          @unique
+  nin             String?         @unique
+  address         String?
+  riskScore       Int
+  screeningStatus ScreeningStatus @default(CLEARED)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }
 
+model ComplianceCase {
+  id               String               @id @default(uuid())
+  userId           String
+  user             User                 @relation("ComplianceCaseSubject", fields: [userId], references: [id])
+  riskScore        Int
+  watchlistHits    String[]
+  status           ComplianceCaseStatus @default(OPEN)
+  resolutionNotes  String?
+  resolvedByUserId String?
+  resolvedBy       User?                @relation("ComplianceCaseResolver", fields: [resolvedByUserId], references: [id])
+  createdAt        DateTime             @default(now())
+  resolvedAt       DateTime?
 
+  @@index([userId])
+}

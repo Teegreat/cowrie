@@ -2,6 +2,8 @@ import { DomainException } from 'src/shared-kernel/domain-exception';
 
 export type KycTier = 'TIER_1' | 'TIER_2' | 'TIER_3';
 
+export type ScreeningStatus = 'CLEARED' | 'FLAGGED' | 'BLOCKED';
+
 export class Bvn {
   private constructor(readonly value: string) {}
 
@@ -43,6 +45,8 @@ export interface PublicProfile {
   bvn: string;
   nin: string | null;
   address: string | null;
+  riskScore: number;
+  screeningStatus: ScreeningStatus;
 }
 
 function calculateAge(dateOfBirth: Date): number {
@@ -62,6 +66,8 @@ export class Profile {
     readonly bvn: Bvn,
     readonly nin: Nin | null,
     readonly address: string | null,
+    readonly riskScore: number,
+    readonly screeningStatus: ScreeningStatus,
   ) {}
 
   get fullName(): string {
@@ -78,6 +84,8 @@ export class Profile {
     phoneNumber: string;
     dateOfBirth: Date;
     bvn: string;
+    riskScore: number;
+    watchlistHits: string[];
   }): Profile {
     if (calculateAge(input.dateOfBirth) < 18) {
       throw new DomainException(
@@ -95,6 +103,8 @@ export class Profile {
       Bvn.of(input.bvn),
       null,
       null,
+      input.riskScore,
+      Profile.resolveScreeningStatus(input.riskScore, input.watchlistHits),
     );
   }
 
@@ -109,6 +119,8 @@ export class Profile {
     bvn: string;
     nin: string | null;
     address: string | null;
+    riskScore: number;
+    screeningStatus: ScreeningStatus;
   }): Profile {
     return new Profile(
       input.userId,
@@ -121,6 +133,8 @@ export class Profile {
       Bvn.of(input.bvn),
       input.nin ? Nin.of(input.nin) : null,
       input.address,
+      input.riskScore,
+      input.screeningStatus,
     );
   }
 
@@ -139,6 +153,8 @@ export class Profile {
       this.bvn,
       Nin.of(ninValue),
       this.address,
+      this.riskScore,
+      this.screeningStatus,
     );
   }
 
@@ -157,6 +173,8 @@ export class Profile {
       this.bvn,
       this.nin,
       address,
+      this.riskScore,
+      this.screeningStatus,
     );
   }
 
@@ -172,6 +190,54 @@ export class Profile {
       bvn: this.bvn.masked(),
       nin: this.nin ? this.nin.masked() : null,
       address: this.address,
+      riskScore: this.riskScore,
+      screeningStatus: this.screeningStatus,
     };
+  }
+
+  private static resolveScreeningStatus(
+    riskScore: number,
+    watchlistHits: string[],
+  ): ScreeningStatus {
+    // The CBN's 2024 PEP Screening Guidelines: a direct watchlist hit
+    // blocks outright; otherwise a risk score below 70/100 flags for
+    // manual review rather than blocking automatically.
+    if (watchlistHits.length > 0) return 'BLOCKED';
+    if (riskScore < 70) return 'FLAGGED';
+    return 'CLEARED';
+  }
+
+  clearScreening(): Profile {
+    return new Profile(
+      this.userId,
+      this.firstName,
+      this.middleName,
+      this.lastName,
+      this.phoneNumber,
+      this.dateOfBirth,
+      this.kycTier,
+      this.bvn,
+      this.nin,
+      this.address,
+      this.riskScore,
+      'CLEARED',
+    );
+  }
+
+  confirmBlock(): Profile {
+    return new Profile(
+      this.userId,
+      this.firstName,
+      this.middleName,
+      this.lastName,
+      this.phoneNumber,
+      this.dateOfBirth,
+      this.kycTier,
+      this.bvn,
+      this.nin,
+      this.address,
+      this.riskScore,
+      'BLOCKED',
+    );
   }
 }

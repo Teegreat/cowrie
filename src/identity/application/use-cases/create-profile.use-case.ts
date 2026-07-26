@@ -2,10 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { ProfileRepository } from '../ports/profile-repository.port';
 import { Profile, PublicProfile } from 'src/identity/domain/profile';
 import { DomainException } from 'src/shared-kernel/domain-exception';
+import { SanctionsScreeningGateway } from '../ports/sanctions-screening-gateway.port';
+import { ComplianceCaseRepository } from '../ports/compliance-case-repository.port';
 
 @Injectable()
 export class CreateProfileUseCase {
-  constructor(private readonly profileRepository: ProfileRepository) {}
+  constructor(
+    private readonly profileRepository: ProfileRepository,
+    private readonly screeningGateway: SanctionsScreeningGateway,
+    private readonly complianceCaseRepository: ComplianceCaseRepository,
+  ) {}
 
   async execute(input: {
     userId: string;
@@ -20,7 +26,29 @@ export class CreateProfileUseCase {
     if (existing) {
       throw new DomainException('Profile already exists for this account');
     }
-    const created = await this.profileRepository.create(Profile.create(input));
+    const screening = await this.screeningGateway.screen({
+      firstName: input.firstName,
+      middleName: input.middleName ?? null,
+      lastName: input.lastName,
+      dateOfBirth: input.dateOfBirth,
+    });
+
+    const profile = Profile.create({
+      ...input,
+      riskScore: screening.riskScore,
+      watchlistHits: screening.watchlistHits,
+    });
+
+    const created = await this.profileRepository.create(profile);
+
+    if (created.screeningStatus !== 'CLEARED') {
+      await this.complianceCaseRepository.create({
+        userId: created.userId,
+        riskScore: screening.riskScore,
+        watchlistHits: screening.watchlistHits,
+      });
+    }
+
     return created.toPublicProfile();
   }
 }

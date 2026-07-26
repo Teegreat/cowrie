@@ -8,7 +8,10 @@ import { CreateProfileDto } from './dto/create-profile.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { UpgradeTier2Dto } from './dto/upgrade-tier2.dto';
 import { UpgradeTier3Dto } from './dto/upgrade-tier3.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('profile')
+@ApiBearerAuth()
 @Controller('identity/profile')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {

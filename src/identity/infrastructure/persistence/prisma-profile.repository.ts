@@ -29,6 +29,8 @@ export class PrismaProfileRepository extends ProfileRepository {
           dateOfBirth: profile.dateOfBirth,
           kycTier: profile.kycTier,
           bvn: profile.bvn.value,
+          riskScore: profile.riskScore,
+          screeningStatus: profile.screeningStatus,
         },
       });
       return Profile.existing(created);
@@ -53,6 +55,7 @@ export class PrismaProfileRepository extends ProfileRepository {
           kycTier: profile.kycTier,
           nin: profile.nin?.value ?? null,
           address: profile.address,
+          screeningStatus: profile.screeningStatus,
         },
       });
       return Profile.existing(updated);

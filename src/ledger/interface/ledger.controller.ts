@@ -6,7 +6,9 @@ import { PostTransactionDto } from './dto/post-transaction.dto';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { CreateAccountUseCase } from '../application/use-cases/create-account.use-case';
 import { PostTransactionUseCase } from '../application/use-cases/post-transaction.use-case';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('ledger')
 @Controller('ledger')
 export class LedgerController {
   constructor(

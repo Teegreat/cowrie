@@ -13,7 +13,9 @@ import { GetUserByIdUseCase } from '../application/use-cases/get-user-by-id.use-
 import { UserRole } from '../domain/user';
 import { RolesGuard } from './guards/role.guard';
 import { Roles } from './decorators/role.decorators';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('identity')
 @Controller('identity')
 export class IdentityController {
   constructor(
@@ -46,12 +48,14 @@ export class IdentityController {
     return { success: true };
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
   me(@CurrentUser() user: { id: string; email: string; role: UserRole }) {
     return user;
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get('users')
@@ -59,6 +63,7 @@ export class IdentityController {
     return this.listUsers.execute();
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('users/:id')
   getUser(

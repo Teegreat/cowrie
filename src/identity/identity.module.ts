@@ -25,6 +25,13 @@ import { UpgradeToTier3UseCase } from './application/use-cases/upgrade-to-tier3.
 import { ProfileRepository } from './application/ports/profile-repository.port';
 import { PrismaProfileRepository } from './infrastructure/persistence/prisma-profile.repository';
 import { ProfileController } from './interface/profile.controller';
+import { ComplainceController } from './interface/compliance.controller';
+import { ListComplianceCaseUseCase } from './application/use-cases/list-compliance-case.use-case';
+import { ResolveComplianceCaseUseCase } from './application/use-cases/resolve-complaince-case.use-case';
+import { ComplianceCaseRepository } from './application/ports/compliance-case-repository.port';
+import { PrismaComplianceCaseRepository } from './infrastructure/persistence/prisma-compliance-case.repository';
+import { SanctionsScreeningGateway } from './application/ports/sanctions-screening-gateway.port';
+import { MockSanctionsScreeningGateway } from './infrastructure/mock-sanctions-screening.gateway';
 
 @Module({
   imports: [
@@ -36,7 +43,7 @@ import { ProfileController } from './interface/profile.controller';
       }),
     }),
   ],
-  controllers: [IdentityController, ProfileController],
+  controllers: [IdentityController, ProfileController, ComplainceController],
   providers: [
     RegisterUserUseCase,
     LoginUserUseCase,
@@ -48,6 +55,8 @@ import { ProfileController } from './interface/profile.controller';
     GetProfileUseCase,
     UpgradeToTier2UseCase,
     UpgradeToTier3UseCase,
+    ListComplianceCaseUseCase,
+    ResolveComplianceCaseUseCase,
     JwtStrategy,
     RolesGuard,
     { provide: PasswordHasher, useClass: Argon2PasswordHasher },
@@ -55,6 +64,14 @@ import { ProfileController } from './interface/profile.controller';
     { provide: TokenIssuer, useClass: JwtTokenIssuer },
     { provide: RefreshTokenRepository, useClass: PrismaRefreshTokenRepository },
     { provide: ProfileRepository, useClass: PrismaProfileRepository },
+    {
+      provide: ComplianceCaseRepository,
+      useClass: PrismaComplianceCaseRepository,
+    },
+    {
+      provide: SanctionsScreeningGateway,
+      useClass: MockSanctionsScreeningGateway,
+    },
   ],
   exports: [UserRepository],
 })
