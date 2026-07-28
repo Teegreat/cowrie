@@ -11,4 +11,12 @@ export class JwtTokenIssuer extends TokenIssuer {
   issueAccessToken(payload: { sub: string }): Promise<string> {
     return this.jwtService.signAsync(payload);
   }
+
+  issueStepUpToken(payload: { sub: string }): Promise<string> {
+    // `type` matters as much as the signature itself.
+    return this.jwtService.signAsync(
+      { ...payload, type: 'step-up' },
+      { expiresIn: '5m' },
+    );
+  }
 }

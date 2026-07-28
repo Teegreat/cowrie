@@ -4,10 +4,18 @@ import { AppService } from './app.service';
 import { LedgerModule } from './ledger/ledger.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { IdentityModule } from './identity/identity.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
-  imports: [LedgerModule, PrismaModule, IdentityModule],
+  imports: [
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]), // default: 10 requests/minute globally
+
+    LedgerModule,
+    PrismaModule,
+    IdentityModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

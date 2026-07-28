@@ -5,7 +5,7 @@ import { Roles } from './decorators/role.decorators';
 import { ListComplianceCaseUseCase } from '../application/use-cases/list-compliance-case.use-case';
 import { ResolveComplianceCaseDto } from './dto/resolve-compliance-case.dto';
 import { ResolveComplianceCaseUseCase } from '../application/use-cases/resolve-complaince-case.use-case';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from './decorators/current-user.decorator';
 
 @ApiTags('compliance')
@@ -19,11 +19,17 @@ export class ComplainceController {
     private readonly resolveCase: ResolveComplianceCaseUseCase,
   ) {}
 
+  @ApiOperation({ summary: 'List all open compliance cases (admin only)' })
   @Get()
   list() {
     return this.listCases.execute();
   }
 
+  @ApiOperation({
+    summary: 'Resolve a compliance case',
+    description:
+      "Requires a disposition (CLEARED or CONFIRMED_BLOCK), which atomically updates the linked user's screening status. A case can only be resolved once.",
+  })
   @Patch(':id/resolve')
   async resolve(
     @Param('id') id: string,

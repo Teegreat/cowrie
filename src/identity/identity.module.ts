@@ -32,6 +32,9 @@ import { ComplianceCaseRepository } from './application/ports/compliance-case-re
 import { PrismaComplianceCaseRepository } from './infrastructure/persistence/prisma-compliance-case.repository';
 import { SanctionsScreeningGateway } from './application/ports/sanctions-screening-gateway.port';
 import { MockSanctionsScreeningGateway } from './infrastructure/mock-sanctions-screening.gateway';
+import { StepUpUseCase } from './application/use-cases/step-up.use.case';
+import { RevealBvnUseCase } from './application/use-cases/reveal-bvn.use-case';
+import { StepUpGuard } from './interface/guards/step-up.guard';
 
 @Module({
   imports: [
@@ -57,6 +60,9 @@ import { MockSanctionsScreeningGateway } from './infrastructure/mock-sanctions-s
     UpgradeToTier3UseCase,
     ListComplianceCaseUseCase,
     ResolveComplianceCaseUseCase,
+    StepUpUseCase,
+    RevealBvnUseCase,
+    StepUpGuard,
     JwtStrategy,
     RolesGuard,
     { provide: PasswordHasher, useClass: Argon2PasswordHasher },

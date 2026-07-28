@@ -6,7 +6,7 @@ import { PostTransactionDto } from './dto/post-transaction.dto';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { CreateAccountUseCase } from '../application/use-cases/create-account.use-case';
 import { PostTransactionUseCase } from '../application/use-cases/post-transaction.use-case';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('ledger')
 @Controller('ledger')
@@ -17,6 +17,7 @@ export class LedgerController {
     private readonly postTransaction: PostTransactionUseCase,
   ) {}
 
+  @ApiOperation({ summary: 'Health-check the (mocked) BaaS gateway wiring' })
   @Get('baas-check')
   async baasCheck() {
     // Controller only translates HTTP <-> use case. No business logic,
@@ -26,6 +27,7 @@ export class LedgerController {
     };
   }
 
+  @ApiOperation({ summary: 'Validate and format a Money amount + currency' })
   @Post('money-check')
   moneyCheck(@Body() dto: CheckMoneyDto) {
     // Money.of() throws DomainException on an invalid currency format —
@@ -36,12 +38,18 @@ export class LedgerController {
     return { formatted: money.toString() };
   }
 
+  @ApiOperation({ summary: 'Create a ledger account (ASSET or LIABILITY)' })
   @Post('accounts')
   async createAccountEndpoint(@Body() dto: CreateAccountDto) {
     const id = await this.createAccount.execute(dto);
     return { id };
   }
 
+  @ApiOperation({
+    summary: 'Post a balanced double-entry transaction',
+    description:
+      'Total debits must equal total credits across all postings, or the request is rejected.',
+  })
   @Post('transactions')
   async postTransactionEndpoint(@Body() dto: PostTransactionDto) {
     // The controller's job: translate raw DTO primitives into real domain

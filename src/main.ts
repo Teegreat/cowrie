@@ -4,10 +4,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  app.use(helmet());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // strips any property not declared on the DTO
@@ -18,7 +19,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Cowrie API')
-    .setDescription('Cowrie fintech backedn - API documentation')
+    .setDescription('Cowrie fintech backend - API documentation')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
