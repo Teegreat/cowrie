@@ -47,7 +47,7 @@ export class AesEncryptionService extends EncryptionService {
   }
 
   decrypt(ciphertext: string): string {
-    const data = Buffer.from(ciphertext);
+    const data = Buffer.from(ciphertext, 'base64');
     const iv = data.subarray(0, IV_LENGTH);
     const authTag = data.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
     const encrypted = data.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
