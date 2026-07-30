@@ -1,3 +1,5 @@
+import { TransactionContext } from 'src/common/transaction/transaction-manager.port';
+
 export interface ComplianceCaseSummary {
   id: string;
   userId: string;
@@ -11,21 +13,26 @@ export interface ComplianceCaseSummary {
 }
 
 export abstract class ComplianceCaseRepository {
-  abstract create(input: {
-    userId: string;
-    riskScore: number;
-    watchlistHits: string[];
-  }): Promise<void>;
+  abstract create(
+    input: { userId: string; riskScore: number; watchlistHits: string[] },
+    ctx?: TransactionContext,
+  ): Promise<void>;
   abstract findOpenCases(): Promise<ComplianceCaseSummary[]>;
 
   abstract findById(caseId: string): Promise<ComplianceCaseSummary | null>;
-  // Returns false if the case was already resolved (race-condition guard) —
-  // true means it resolved this case AND updated the linked Profile,
-  // atomically, in one transaction.
-  abstract resolveAndUpdateProfile(input: {
-    caseId: string;
-    notes: string;
-    resolvedByUserId: string;
-    disposition: 'CLEARED' | 'CONFIRMED_BLOCK';
-  }): Promise<boolean>;
+  // Resolves the case only, atomically guarded so a case can never be
+  // resolved twice — returns the subject's userId on success so the
+  // caller can update their Profile as a separate step in the same
+  // transaction, or null if the case was already resolved. Updating the
+  // linked Profile is no longer this repository's job now that a third
+  // repository (audit) needs to join the same commit — see Ch. 23.
+  abstract resolveIfOpen(
+    input: {
+      caseId: string;
+      notes: string;
+      resolvedByUserId: string;
+      disposition: 'CLEARED' | 'CONFIRMED_BLOCK';
+    },
+    ctx: TransactionContext,
+  ): Promise<{ userId: string } | null>;
 }

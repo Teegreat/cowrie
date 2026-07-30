@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { RegisterUserUseCase } from '../application/use-cases/register-user.use-case';
 import { LoginUserUseCase } from '../application/use-cases/login-user.use-case';
 import { RegisterDto } from './dto/register.dto';
@@ -17,6 +25,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { StepUpDto } from './dto/step-up.dto';
 import { StepUpUseCase } from '../application/use-cases/step-up.use.case';
 import { Throttle } from '@nestjs/throttler';
+import type { Request } from 'express';
 
 @ApiTags('identity')
 @Controller('identity')
@@ -38,8 +47,12 @@ export class IdentityController {
   })
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5/minute, not the global 10
   @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.registerUser.execute(dto);
+  register(@Body() dto: RegisterDto, @Req() req: Request) {
+    return this.registerUser.execute({
+      ...dto,
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
   }
 
   @ApiOperation({
@@ -49,8 +62,12 @@ export class IdentityController {
   })
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5/minute, not the global 10
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.loginUser.execute(dto);
+  login(@Body() dto: LoginDto, @Req() req: Request) {
+    return this.loginUser.execute({
+      ...dto,
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
   }
 
   @ApiOperation({
@@ -65,8 +82,16 @@ export class IdentityController {
 
   @ApiOperation({ summary: 'Revoke a refresh token, ending that session' })
   @Post('logout')
-  async logout(@Body() dto: RefreshTokenDto) {
-    await this.logoutUser.execute(dto.refreshToken);
+  async logout(@Body() dto: RefreshTokenDto, @Req() req: Request) {
+    // No JWT required for logout (possession of the refresh token is
+    // itself sufficient authorization), so the actor isn't independently
+    // verified here — the audit entry still captures IP/user agent.
+    await this.logoutUser.execute(
+      dto.refreshToken,
+      null,
+      req.ip ?? null,
+      req.headers['user-agent'] ?? null,
+    );
     return { success: true };
   }
 

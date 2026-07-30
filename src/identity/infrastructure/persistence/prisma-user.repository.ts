@@ -4,11 +4,16 @@ import { UserRepository } from 'src/identity/application/ports/user-repository.p
 import { User } from 'src/identity/domain/user';
 import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
 import { DomainException } from 'src/shared-kernel/domain-exception';
+import { TransactionContext } from 'src/common/transaction/transaction-manager.port';
 
 @Injectable()
 export class PrismaUserRepository extends UserRepository {
   constructor(private readonly prisma: PrismaService) {
     super();
+  }
+
+  private client(ctx?: TransactionContext) {
+    return (ctx as Prisma.TransactionClient | undefined) ?? this.prisma;
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -22,9 +27,9 @@ export class PrismaUserRepository extends UserRepository {
     );
   }
 
-  async create(user: User): Promise<User> {
+  async create(user: User, ctx?: TransactionContext): Promise<User> {
     try {
-      const created = await this.prisma.user.create({
+      const created = await this.client(ctx).user.create({
         data: { email: user.email, hashedPassword: user.hashedPassword },
       });
       return User.existing(

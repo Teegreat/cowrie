@@ -45,6 +45,17 @@ enum ComplianceCaseStatus {
   RESOLVED
 }
 
+enum AuditAction {
+  USER_REGISTERED
+  USER_LOGGED_IN
+  USER_LOGIN_FAILED
+  USER_LOGGED_OUT
+  PROFILE_CREATED
+  KYC_TIER_UPGRADED
+  COMPLIANCE_CASE_RESOLVED
+  BVN_REVEALED
+}
+
 model Account {
   id          String      @id @default(uuid())
   name        String
@@ -84,6 +95,7 @@ model User {
   profile                 Profile?
   complianceCases         ComplianceCase[] @relation("ComplianceCaseSubject")
   resolvedComplianceCases ComplianceCase[] @relation("ComplianceCaseResolver")
+  auditLogs               AuditLog[]
 }
 
 model RefreshToken {
@@ -106,8 +118,10 @@ model Profile {
   phoneNumber     String          @unique
   dateOfBirth     DateTime
   kycTier         KycTier         @default(TIER_1)
-  bvn             String          @unique
-  nin             String?         @unique
+  bvn             String
+  bvnHash         String          @unique
+  nin             String?
+  ninHash         String?         @unique
   address         String?
   riskScore       Int
   screeningStatus ScreeningStatus @default(CLEARED)
@@ -129,4 +143,22 @@ model ComplianceCase {
   resolvedAt       DateTime?
 
   @@index([userId])
+}
+
+model AuditLog {
+  id          String      @id
+  actorUserId String?
+  actor       User?       @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorEmail  String?
+  action      AuditAction
+  targetType  String?
+  targetId    String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime    @default(now())
+
+  @@index([actorUserId])
+  @@index([action])
+  @@index([createdAt])
 }

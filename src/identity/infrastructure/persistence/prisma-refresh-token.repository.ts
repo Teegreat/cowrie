@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import { RefreshTokenRepository } from 'src/identity/application/ports/refresh-token-repository.port';
 import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
+import { TransactionContext } from 'src/common/transaction/transaction-manager.port';
 
 @Injectable()
 export class PrismaRefreshTokenRepository extends RefreshTokenRepository {
@@ -35,31 +37,36 @@ export class PrismaRefreshTokenRepository extends RefreshTokenRepository {
     return { userId: deleted.userId };
   }
 
-  async revokeByHashedToken(hashedToken: string): Promise<void> {
+  async revokeByHashedToken(
+    hashedToken: string,
+    ctx?: TransactionContext,
+  ): Promise<void> {
     // deleteMany, not delete — idempotent, so revoking an
     // already-revoked or nonexistent token never throws.
-    await this.prisma.refreshToken.deleteMany({ where: { hashedToken } });
+    const client = (ctx as Prisma.TransactionClient | undefined) ?? this.prisma;
+    await client.refreshToken.deleteMany({ where: { hashedToken } });
   }
 
-  async replaceAllForUser(input: {
-    userId: string;
-    hashedToken: string;
-    expiresAt: Date;
-  }): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      // Lock the user row as a mutex — same technique as Ch. 16's
-      // insufficient-balance check — so two concurrent logins for the
-      // same user can never both leave a surviving session behind.
-      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${input.userId} FOR UPDATE`;
+  async replaceAllForUser(
+    input: { userId: string; hashedToken: string; expiresAt: Date },
+    ctx: TransactionContext,
+  ): Promise<void> {
+    const tx = ctx as Prisma.TransactionClient;
+    // Lock the user row as a mutex — same technique as Ch. 16's
+    // insufficient-balance check — so two concurrent logins for the
+    // same user can never both leave a surviving session behind. The
+    // transaction itself is now opened by LoginUseCase via
+    // TransactionManager, so its audit entry commits or rolls back
+    // together with this.
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${input.userId} FOR UPDATE`;
 
-      await tx.refreshToken.deleteMany({ where: { userId: input.userId } });
-      await tx.refreshToken.create({
-        data: {
-          userId: input.userId,
-          hashedToken: input.hashedToken,
-          expiresAt: input.expiresAt,
-        },
-      });
+    await tx.refreshToken.deleteMany({ where: { userId: input.userId } });
+    await tx.refreshToken.create({
+      data: {
+        userId: input.userId,
+        hashedToken: input.hashedToken,
+        expiresAt: input.expiresAt,
+      },
     });
   }
 }

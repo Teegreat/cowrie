@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/role.guard';
 import { Roles } from './decorators/role.decorators';
@@ -35,8 +44,16 @@ export class ComplainceController {
     @Param('id') id: string,
     @Body() dto: ResolveComplianceCaseDto,
     @CurrentUser() admin: { id: string },
+    @Req() req: Request,
   ) {
-    await this.resolveCase.execute(id, dto.notes, dto.disposition, admin.id);
+    await this.resolveCase.execute(
+      id,
+      dto.notes,
+      dto.disposition,
+      admin.id,
+      req.ip ?? null,
+      req.headers['user-agent'] ?? null,
+    );
     return { success: true };
   }
 }

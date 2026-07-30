@@ -35,6 +35,9 @@ import { MockSanctionsScreeningGateway } from './infrastructure/mock-sanctions-s
 import { StepUpUseCase } from './application/use-cases/step-up.use.case';
 import { RevealBvnUseCase } from './application/use-cases/reveal-bvn.use-case';
 import { StepUpGuard } from './interface/guards/step-up.guard';
+import { EncryptionService } from './application/ports/encryption-service.port';
+import { AesEncryptionService } from './infrastructure/encryption/aes-encryption.service';
+import { AuditModule } from 'src/audit/audit.module';
 
 @Module({
   imports: [
@@ -45,6 +48,7 @@ import { StepUpGuard } from './interface/guards/step-up.guard';
         signOptions: { expiresIn: '15m' },
       }),
     }),
+    AuditModule,
   ],
   controllers: [IdentityController, ProfileController, ComplainceController],
   providers: [
@@ -78,6 +82,7 @@ import { StepUpGuard } from './interface/guards/step-up.guard';
       provide: SanctionsScreeningGateway,
       useClass: MockSanctionsScreeningGateway,
     },
+    { provide: EncryptionService, useClass: AesEncryptionService },
   ],
   exports: [UserRepository],
 })

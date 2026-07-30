@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CreateProfileUseCase } from '../application/use-cases/create-profile.use-case';
 import { GetProfileUseCase } from '../application/use-cases/get-profile.use-case';
@@ -36,7 +45,11 @@ export class ProfileController {
       'Screens the submitted name/DOB against a sanctions/PEP gateway before creating the profile. Requires a BVN.',
   })
   @Post()
-  create(@Body() dto: CreateProfileDto, @CurrentUser() user: { id: string }) {
+  create(
+    @Body() dto: CreateProfileDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
     return this.createProfile.execute({
       userId: user.id,
       firstName: dto.firstName,
@@ -45,6 +58,8 @@ export class ProfileController {
       phoneNumber: dto.phoneNumber,
       dateOfBirth: new Date(dto.dateOfBirth),
       bvn: dto.bvn,
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
     });
   }
 
@@ -59,8 +74,17 @@ export class ProfileController {
 
   @ApiOperation({ summary: 'Upgrade to Tier 2 by submitting a NIN' })
   @Patch('tier2')
-  toTier2(@Body() dto: UpgradeTier2Dto, @CurrentUser() user: { id: string }) {
-    return this.upgradeToTier2.execute({ userId: user.id, nin: dto.nin });
+  toTier2(
+    @Body() dto: UpgradeTier2Dto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    return this.upgradeToTier2.execute({
+      userId: user.id,
+      nin: dto.nin,
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
   }
 
   @ApiOperation({
@@ -69,10 +93,16 @@ export class ProfileController {
       'Only allowed from Tier 2 — Tier 3 cannot be reached directly from Tier 1.',
   })
   @Patch('tier3')
-  toTier3(@Body() dto: UpgradeTier3Dto, @CurrentUser() user: { id: string }) {
+  toTier3(
+    @Body() dto: UpgradeTier3Dto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
     return this.upgradeToTier3.execute({
       userId: user.id,
       address: dto.address,
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
     });
   }
 
@@ -89,7 +119,11 @@ export class ProfileController {
   })
   @UseGuards(JwtAuthGuard, StepUpGuard)
   @Get('bvn/reveal')
-  bvnReveal(@CurrentUser() user: { id: string }) {
-    return this.revealBvn.execute(user.id);
+  bvnReveal(@CurrentUser() user: { id: string }, @Req() req: Request) {
+    return this.revealBvn.execute(
+      user.id,
+      req.ip ?? null,
+      req.headers['user-agent'] ?? null,
+    );
   }
 }

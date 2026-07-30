@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
 import {
   ComplianceCaseRepository,
   ComplianceCaseSummary,
 } from 'src/identity/application/ports/compliance-case-repository.port';
-import { Profile } from 'src/identity/domain/profile';
+import { TransactionContext } from 'src/common/transaction/transaction-manager.port';
 
 @Injectable()
 export class PrismaComplianceCaseRepository extends ComplianceCaseRepository {
@@ -12,12 +13,12 @@ export class PrismaComplianceCaseRepository extends ComplianceCaseRepository {
     super();
   }
 
-  async create(input: {
-    userId: string;
-    riskScore: number;
-    watchlistHits: string[];
-  }): Promise<void> {
-    await this.prisma.complianceCase.create({ data: input });
+  async create(
+    input: { userId: string; riskScore: number; watchlistHits: string[] },
+    ctx?: TransactionContext,
+  ): Promise<void> {
+    const client = (ctx as Prisma.TransactionClient | undefined) ?? this.prisma;
+    await client.complianceCase.create({ data: input });
   }
 
   async findOpenCases(): Promise<ComplianceCaseSummary[]> {
@@ -64,51 +65,37 @@ export class PrismaComplianceCaseRepository extends ComplianceCaseRepository {
     };
   }
 
-  async resolveAndUpdateProfile(input: {
-    caseId: string;
-    notes: string;
-    resolvedByUserId: string;
-    disposition: 'CLEARED' | 'CONFIRMED_BLOCK';
-  }): Promise<boolean> {
-    return this.prisma.$transaction(async (tx) => {
-      // Conditional update: only matches if still OPEN. Two admins
-      // resolving the same case concurrently — the second one gets
-      // count: 0 and knows it lost the race, instead of silently
-      // overwriting the first admin's determination.
-      const result = await tx.complianceCase.updateMany({
-        where: { id: input.caseId, status: 'OPEN' },
-        data: {
-          status: 'RESOLVED',
-          resolutionNotes: input.notes,
-          resolvedByUserId: input.resolvedByUserId,
-          resolvedAt: new Date(),
-        },
-      });
-
-      if (result.count === 0) {
-        return false;
-      }
-
-      const caseRecord = await tx.complianceCase.findUniqueOrThrow({
-        where: { id: input.caseId },
-      });
-      const profileRecord = await tx.profile.findUnique({
-        where: { userId: caseRecord.userId },
-      });
-
-      if (profileRecord) {
-        const profile = Profile.existing(profileRecord);
-        const updated =
-          input.disposition === 'CLEARED'
-            ? profile.clearScreening()
-            : profile.confirmBlock();
-        await tx.profile.update({
-          where: { userId: updated.userId },
-          data: { screeningStatus: updated.screeningStatus },
-        });
-      }
-
-      return true;
+  async resolveIfOpen(
+    input: {
+      caseId: string;
+      notes: string;
+      resolvedByUserId: string;
+      disposition: 'CLEARED' | 'CONFIRMED_BLOCK';
+    },
+    ctx: TransactionContext,
+  ): Promise<{ userId: string } | null> {
+    const tx = ctx as Prisma.TransactionClient;
+    // Conditional update: only matches if still OPEN. Two admins
+    // resolving the same case concurrently — the second one gets
+    // count: 0 and knows it lost the race, instead of silently
+    // overwriting the first admin's determination.
+    const result = await tx.complianceCase.updateMany({
+      where: { id: input.caseId, status: 'OPEN' },
+      data: {
+        status: 'RESOLVED',
+        resolutionNotes: input.notes,
+        resolvedByUserId: input.resolvedByUserId,
+        resolvedAt: new Date(),
+      },
     });
+
+    if (result.count === 0) {
+      return null;
+    }
+
+    const caseRecord = await tx.complianceCase.findUniqueOrThrow({
+      where: { id: input.caseId },
+    });
+    return { userId: caseRecord.userId };
   }
 }
