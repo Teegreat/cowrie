@@ -4,6 +4,7 @@ export abstract class LedgerRepository {
   abstract createAccount(input: {
     name: string;
     accountType: 'ASSET' | 'LIABILITY';
+    currency: string;
   }): Promise<string>;
   abstract saveTransaction(transaction: LedgerTransaction): Promise<string>;
 }

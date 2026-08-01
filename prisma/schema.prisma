@@ -60,6 +60,7 @@ model Account {
   id          String      @id @default(uuid())
   name        String
   accountType AccountType
+  currency    String
   postings    Posting[]
   createdAt   DateTime    @default(now())
 }
@@ -82,6 +83,7 @@ model Posting {
   createdAt     DateTime          @default(now())
 
   @@index([accountId])
+  @@index([transactionId, currency])
   @@index([transactionId])
 }
 

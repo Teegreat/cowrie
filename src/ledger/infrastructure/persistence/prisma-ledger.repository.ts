@@ -16,6 +16,7 @@ export class PrismaLedgerRepository extends LedgerRepository {
   async createAccount(input: {
     name: string;
     accountType: 'ASSET' | 'LIABILITY';
+    currency: string;
   }): Promise<string> {
     const account = await this.prisma.account.create({ data: input });
     return account.id;
@@ -35,8 +36,8 @@ export class PrismaLedgerRepository extends LedgerRepository {
       // transaction trying to lock the same accounts must wait until
       // we commit or roll back.
       const lockedAccounts = await tx.$queryRaw<
-        { id: string; accountType: string }[]
-      >`SELECT id, "accountType" FROM "Account" WHERE id IN (${Prisma.join(accountIds)}) FOR UPDATE`;
+        { id: string; accountType: string; currency: string }[]
+      >`SELECT id, "accountType", "currency" FROM "Account" WHERE id IN (${Prisma.join(accountIds)}) FOR UPDATE`;
 
       if (lockedAccounts.length !== accountIds.length) {
         const foundIds = new Set(lockedAccounts.map((a) => a.id));
@@ -50,18 +51,35 @@ export class PrismaLedgerRepository extends LedgerRepository {
         lockedAccounts.map((a) => [a.id, a.accountType]),
       );
 
+      const currencyById = new Map(
+        lockedAccounts.map((a) => [a.id, a.currency]),
+      );
+
       // Only debits against a LIABILITY account (money leaving a
       // customer's wallet) can overdraw — a debit against an ASSET
       // account is a different concern (pool solvency), not handled
       // here.
       for (const posting of transaction.postings) {
+        // Accounts are single-currency by design — mixing currencies on
+        // one account would make its balance meaningless (summing NGN
+        // kobo with USD cents as if fungible). Checked for every posting,
+        // regardless of account type or direction.
+        const accountCurrency = currencyById.get(posting.accountId);
+        if (posting.money.currencyCode !== accountCurrency) {
+          throw new DomainException(
+            `Posting currency ${posting.money.currencyCode} does not match account ${posting.accountId}'s currency ${accountCurrency}`,
+          );
+        }
         if (
           accountTypeById.get(posting.accountId) === 'LIABILITY' &&
           posting.direction === 'DEBIT'
         ) {
           const sums = await tx.posting.groupBy({
             by: ['direction'],
-            where: { accountId: posting.accountId },
+            where: {
+              accountId: posting.accountId,
+              currency: posting.money.currencyCode,
+            },
             _sum: { minorUnits: true },
           });
           const credits =
@@ -70,10 +88,9 @@ export class PrismaLedgerRepository extends LedgerRepository {
             sums.find((s) => s.direction === 'DEBIT')?._sum.minorUnits ?? 0n;
           const currentBalance = credits - debits; // liability: credit increases, debit decreases
 
-          // minorUnits is BigInt in Postgres/Prisma but a plain number inside Money (Ch. 7) — safe below Number.MAX_SAFE_INTEGER,
-          // a simplification Ch. 24 (Money Precision) will revisit.
-
-          if (currentBalance < BigInt(posting.money.minorUnitsValue)) {
+          // No more BigInt(...) wrapping — minorUnitsValue is bigint now,
+          // matching the column, with no conversion at this boundary at all.
+          if (currentBalance < posting.money.minorUnitsValue) {
             throw new DomainException(
               `Insufficient balance on account ${posting.accountId}`,
             );

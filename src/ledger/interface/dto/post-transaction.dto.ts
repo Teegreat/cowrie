@@ -3,9 +3,9 @@ import {
   ArrayMinSize,
   IsArray,
   IsIn,
-  IsInt,
   IsString,
   Length,
+  Matches,
   ValidateNested,
 } from 'class-validator';
 
@@ -13,8 +13,11 @@ class PostingDto {
   @IsString()
   accountId!: string;
 
-  @IsInt()
-  minorUnits!: number;
+  @IsString()
+  @Matches(/^\d+$/, {
+    message: 'minorUnits must be a non-negative integer string',
+  })
+  minorUnits!: string;
 
   @IsString()
   @Length(3, 3)

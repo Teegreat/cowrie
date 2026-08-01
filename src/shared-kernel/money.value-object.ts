@@ -5,18 +5,15 @@ export class Money {
   // Money.of(), which runs validation. This makes an invalid Money
   // unrepresentable rather than something you have to remember to check.
   private constructor(
-    private readonly minorUnits: number,
+    private readonly minorUnits: bigint,
     private readonly currency: string,
   ) {}
 
-  static of(minorUnits: number, currency: string): Money {
-    if (!Number.isInteger(minorUnits)) {
-      // Floats lose precision on arithmetic (0.1 + 0.2 !== 0.3 in JS).
-      // Integer minor units sidestep that entirely.
-      throw new DomainException(
-        'Money must be expressed in integer minor units',
-      );
-    }
+  static of(minorUnits: bigint, currency: string): Money {
+    // No integer check needed anymore — bigint has no fractional
+    // representation at all. That's the actual fix: eliminating
+    // float/precision bugs by construction, not by validation.
+
     if (!/^[A-Z]{3}$/.test(currency)) {
       throw new DomainException('Currency must be a 3-letter ISO code');
     }
@@ -52,10 +49,14 @@ export class Money {
   }
 
   toString(): string {
-    return `${(this.minorUnits / 100).toFixed(2)} ${this.currency}`;
+    // Display-only conversion to Number — safe here because it's for
+    // human-readable formatting, not further arithmetic. Every actual
+    // calculation stays in bigint minor units end to end; only the
+    // final string for a human ever passes through a float division.
+    return `${(Number(this.minorUnits) / 100).toFixed(2)} ${this.currency}`;
   }
 
-  get minorUnitsValue(): number {
+  get minorUnitsValue(): bigint {
     return this.minorUnits;
   }
 

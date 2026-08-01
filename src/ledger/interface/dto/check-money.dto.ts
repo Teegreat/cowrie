@@ -1,8 +1,11 @@
-import { IsInt, IsString, Length } from 'class-validator';
+import { IsString, Length, Matches } from 'class-validator';
 
 export class CheckMoneyDto {
-  @IsInt()
-  minorUnits!: number;
+  @IsString()
+  @Matches(/^\d+$/, {
+    message: 'minorUnits must be a non-negative integer string',
+  })
+  minorUnits!: string;
 
   // Deliberately structural only (right length, is a string) — the
   // uppercase-ISO-code rule is a business rule that belongs to Money,

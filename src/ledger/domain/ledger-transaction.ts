@@ -32,11 +32,12 @@ export class LedgerTransaction {
           ? posting.money.minorUnitsValue
           : -posting.money.minorUnitsValue;
       return sum + signed;
-    }, 0);
+    }, 0n);
 
-    if (netMinorUnits !== 0) {
+    if (netMinorUnits !== 0n) {
+      const diff = netMinorUnits < 0n ? -netMinorUnits : netMinorUnits;
       throw new DomainException(
-        `Transaction does not balance: debits and credits differ by ${Math.abs(netMinorUnits)}`,
+        `Transaction does not balance: debits and credits differ by ${diff}`,
       );
     }
 

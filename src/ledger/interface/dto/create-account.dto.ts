@@ -1,4 +1,4 @@
-import { IsIn, IsString, MinLength } from 'class-validator';
+import { IsIn, IsString, Length, MinLength } from 'class-validator';
 
 export class CreateAccountDto {
   @IsString()
@@ -7,4 +7,8 @@ export class CreateAccountDto {
 
   @IsIn(['ASSET', 'LIABILITY'])
   accountType!: 'ASSET' | 'LIABILITY';
+
+  @IsString()
+  @Length(3, 3)
+  currency!: string;
 }

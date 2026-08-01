@@ -30,11 +30,7 @@ export class LedgerController {
   @ApiOperation({ summary: 'Validate and format a Money amount + currency' })
   @Post('money-check')
   moneyCheck(@Body() dto: CheckMoneyDto) {
-    // Money.of() throws DomainException on an invalid currency format —
-    // the DTO already guaranteed minorUnits is an int and currency is a
-    // 3-char string, so anything that throws here is a business-rule
-    // violation, not a shape problem.
-    const money = Money.of(dto.minorUnits, dto.currency);
+    const money = Money.of(BigInt(dto.minorUnits), dto.currency);
     return { formatted: money.toString() };
   }
 
@@ -56,7 +52,7 @@ export class LedgerController {
     // types (Money) before the application layer ever sees them.
     const postings = dto.postings.map((posting) => ({
       accountId: posting.accountId,
-      money: Money.of(posting.minorUnits, posting.currency),
+      money: Money.of(BigInt(posting.minorUnits), posting.currency),
       direction: posting.direction,
     }));
     const id = await this.postTransaction.execute(postings);
