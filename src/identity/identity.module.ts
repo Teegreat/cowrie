@@ -38,6 +38,7 @@ import { StepUpGuard } from './interface/guards/step-up.guard';
 import { EncryptionService } from './application/ports/encryption-service.port';
 import { AesEncryptionService } from './infrastructure/encryption/aes-encryption.service';
 import { AuditModule } from 'src/audit/audit.module';
+import { WalletModule } from 'src/wallet/wallet.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { AuditModule } from 'src/audit/audit.module';
       }),
     }),
     AuditModule,
+    WalletModule
   ],
   controllers: [IdentityController, ProfileController, ComplainceController],
   providers: [

@@ -2,6 +2,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
+import { TransactionContext } from 'src/common/transaction/transaction-manager.port';
 import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
 import { LedgerRepository } from 'src/ledger/application/ports/ledger-repository.port';
 import { LedgerTransaction } from 'src/ledger/domain/ledger-transaction';
@@ -13,13 +14,51 @@ export class PrismaLedgerRepository extends LedgerRepository {
     super();
   }
 
-  async createAccount(input: {
-    name: string;
-    accountType: 'ASSET' | 'LIABILITY';
-    currency: string;
-  }): Promise<string> {
-    const account = await this.prisma.account.create({ data: input });
+  private client(ctx?: TransactionContext) {
+    return (ctx as Prisma.TransactionClient | undefined) ?? this.prisma;
+  }
+
+  async createAccount(
+    input: {
+      name: string;
+      accountType: 'ASSET' | 'LIABILITY';
+      currency: string;
+    },
+    ctx?: TransactionContext,
+  ): Promise<string> {
+    const account = await this.client(ctx).account.create({ data: input });
     return account.id;
+  }
+
+  async getBalance(
+    accountId: string,
+    ctx?: TransactionContext,
+  ): Promise<{ minorUnits: bigint; currency: string }> {
+    const client = this.client(ctx);
+    // Re-reads the account even when called from inside saveTransaction's
+    // own already-locked query — a small redundant SELECT on a row that's
+    // already locked in that case, traded for one reusable method instead
+    // of threading accountType/currency through as extra params for the
+    // sake of an internal caller.
+    const account = await client.account.findUniqueOrThrow({
+      where: { id: accountId },
+    });
+    const sums = await client.posting.groupBy({
+      by: ['direction'],
+      where: { accountId, currency: account.currency },
+      _sum: { minorUnits: true },
+    });
+    const credits =
+      sums.find((s) => s.direction === 'CREDIT')?._sum.minorUnits ?? 0n;
+    const debits =
+      sums.find((s) => s.direction === 'DEBIT')?._sum.minorUnits ?? 0n;
+
+    // LIABILITY: credit increases the balance (money owed to the
+    // customer), debit decreases it. ASSET is the mirror image.
+
+    const minorUnits =
+      account.accountType === 'LIABILITY' ? credits - debits : debits - credits;
+    return { minorUnits, currency: account.currency };
   }
 
   async saveTransaction(transaction: LedgerTransaction): Promise<string> {
@@ -74,22 +113,10 @@ export class PrismaLedgerRepository extends LedgerRepository {
           accountTypeById.get(posting.accountId) === 'LIABILITY' &&
           posting.direction === 'DEBIT'
         ) {
-          const sums = await tx.posting.groupBy({
-            by: ['direction'],
-            where: {
-              accountId: posting.accountId,
-              currency: posting.money.currencyCode,
-            },
-            _sum: { minorUnits: true },
-          });
-          const credits =
-            sums.find((s) => s.direction === 'CREDIT')?._sum.minorUnits ?? 0n;
-          const debits =
-            sums.find((s) => s.direction === 'DEBIT')?._sum.minorUnits ?? 0n;
-          const currentBalance = credits - debits; // liability: credit increases, debit decreases
-
-          // No more BigInt(...) wrapping — minorUnitsValue is bigint now,
-          // matching the column, with no conversion at this boundary at all.
+          const { minorUnits: currentBalance } = await this.getBalance(
+            posting.accountId,
+            tx,
+          );
           if (currentBalance < posting.money.minorUnitsValue) {
             throw new DomainException(
               `Insufficient balance on account ${posting.accountId}`,

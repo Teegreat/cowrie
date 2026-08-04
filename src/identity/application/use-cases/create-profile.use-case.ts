@@ -7,6 +7,7 @@ import { ComplianceCaseRepository } from '../ports/compliance-case-repository.po
 import { TransactionManager } from 'src/common/transaction/transaction-manager.port';
 import { AuditLogRepository } from 'src/audit/application/ports/audit-log-repository.port';
 import { AuditLog } from 'src/audit/domain/audit-log';
+import { CreateWalletUseCase } from 'src/wallet/application/use-cases/create-wallet.use-case';
 
 @Injectable()
 export class CreateProfileUseCase {
@@ -16,7 +17,10 @@ export class CreateProfileUseCase {
     private readonly complianceCaseRepository: ComplianceCaseRepository,
     private readonly transactionManager: TransactionManager,
     private readonly auditLogRepository: AuditLogRepository,
+    private readonly createWalletUseCase: CreateWalletUseCase,
   ) {}
+
+  
 
   async execute(input: {
     userId: string;
@@ -46,6 +50,7 @@ export class CreateProfileUseCase {
       watchlistHits: screening.watchlistHits,
     });
 
+
     const created = await this.transactionManager.run(async (ctx) => {
       const created = await this.profileRepository.create(profile, ctx);
 
@@ -57,6 +62,26 @@ export class CreateProfileUseCase {
             watchlistHits: screening.watchlistHits,
           },
           ctx,
+        );
+      }
+
+      // A confirmed sanctions hit (BLOCKED) withholds wallet creation
+      // entirely. CLEARED and FLAGGED (pending manual review) both still
+      // get a wallet — matching how Kuda/Moniepoint/OPay provision a Naira
+      // wallet automatically the moment BVN-based Tier 1 KYC completes.
+
+      if (created.screeningStatus !== 'BLOCKED') {
+        const wallet = await this.createWalletUseCase.execute(created.userId, ctx)
+        await this.auditLogRepository.create(
+          AuditLog.record({
+            actorUserId: input.userId,
+            actorEmail: null,
+            action: 'WALLET_CREATED',
+            targetType: 'Wallet',
+            targetId: wallet.id,
+            ipAddress: input.ipAddress,
+            userAgent: input.userAgent,
+          }),
         );
       }
 

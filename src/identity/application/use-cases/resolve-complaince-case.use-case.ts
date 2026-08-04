@@ -5,6 +5,8 @@ import { TransactionManager } from 'src/common/transaction/transaction-manager.p
 import { ProfileRepository } from '../ports/profile-repository.port';
 import { AuditLogRepository } from 'src/audit/application/ports/audit-log-repository.port';
 import { AuditLog } from 'src/audit/domain/audit-log';
+import { WalletRepository } from 'src/wallet/application/ports/wallet-repository.port';
+import { CreateWalletUseCase } from 'src/wallet/application/use-cases/create-wallet.use-case';
 
 @Injectable()
 export class ResolveComplianceCaseUseCase {
@@ -13,6 +15,8 @@ export class ResolveComplianceCaseUseCase {
     private readonly complianceCaseRepository: ComplianceCaseRepository,
     private readonly profileRepository: ProfileRepository,
     private readonly auditLogRepository: AuditLogRepository,
+    private readonly walletRepository: WalletRepository,
+    private readonly createWalletUseCase: CreateWalletUseCase,
   ) {}
 
   async execute(
@@ -46,6 +50,34 @@ export class ResolveComplianceCaseUseCase {
             ? profile.clearScreening()
             : profile.confirmBlock();
         await this.profileRepository.update(updatedProfile, ctx);
+      }
+
+      // A case that started BLOCKED at profile-creation time skipped
+      // wallet provisioning entirely (Ch. 25). Clearing it now is the
+      // one path that can retroactively unlock a wallet — but only if
+      // one doesn't already exist (a FLAGGED case already got one).
+      if (disposition === 'CLEARED') {
+        const existingWallet = await this.walletRepository.findByUserId(
+          resolved.userId,
+        );
+        if (!existingWallet) {
+          const wallet = await this.createWalletUseCase.execute(
+            resolved.userId,
+            ctx,
+          );
+          await this.auditLogRepository.create(
+            AuditLog.record({
+              actorUserId: resolvedByUserId,
+              actorEmail: null,
+              action: 'WALLET_CREATED',
+              targetType: 'Wallet',
+              targetId: wallet.id,
+              ipAddress,
+              userAgent,
+            }),
+            ctx,
+          );
+        }
       }
 
       await this.auditLogRepository.create(

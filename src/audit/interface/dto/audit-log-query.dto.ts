@@ -19,6 +19,7 @@ const AUDIT_ACTIONS = [
   'KYC_TIER_UPGRADED',
   'COMPLIANCE_CASE_RESOLVED',
   'BVN_REVEALED',
+  'WALLET_CREATED',
 ] as const;
 
 export class AuditLogQueryDto {

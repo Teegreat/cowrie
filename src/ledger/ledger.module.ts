@@ -20,6 +20,6 @@ import { PrismaLedgerRepository } from './infrastructure/persistence/prisma-ledg
     { provide: BaaSGateway, useClass: MockBaaSGateway },
     { provide: LedgerRepository, useClass: PrismaLedgerRepository },
   ],
-  exports: [],
+  exports: [LedgerRepository],
 })
 export class LedgerModule {}
