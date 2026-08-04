@@ -55,6 +55,7 @@ enum AuditAction {
   COMPLIANCE_CASE_RESOLVED
   BVN_REVEALED
   WALLET_CREATED
+  VIRTUAL_ACCOUNT_CREATED
 }
 
 model Account {
@@ -169,11 +170,22 @@ model AuditLog {
 }
 
 model Wallet {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  accountId String   @unique
-  account   Account  @relation(fields: [accountId], references: [id])
-  currency  String
-  createdAt DateTime @default(now())
+  id             String          @id @default(uuid())
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id])
+  accountId      String          @unique
+  account        Account         @relation(fields: [accountId], references: [id])
+  currency       String
+  virtualAccount VirtualAccount?
+  createdAt      DateTime        @default(now())
+}
+
+model VirtualAccount {
+  id            String   @id @default(uuid())
+  walletId      String   @unique
+  wallet        Wallet   @relation(fields: [walletId], references: [id])
+  accountNumber String   @unique
+  bankCode      String
+  bankName      String
+  createdAt     DateTime @default(now())
 }

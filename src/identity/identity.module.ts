@@ -50,7 +50,7 @@ import { WalletModule } from 'src/wallet/wallet.module';
       }),
     }),
     AuditModule,
-    WalletModule
+    WalletModule,
   ],
   controllers: [IdentityController, ProfileController, ComplainceController],
   providers: [

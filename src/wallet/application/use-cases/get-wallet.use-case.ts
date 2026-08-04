@@ -3,12 +3,14 @@ import { WalletRepository } from '../ports/wallet-repository.port';
 import { LedgerRepository } from 'src/ledger/application/ports/ledger-repository.port';
 import { NotFoundDomainException } from 'src/shared-kernel/domain-exception';
 import { Money } from 'src/shared-kernel/money.value-object';
+import { VirtualAccountRepository } from '../ports/virtual-account-repository.port';
 
 @Injectable()
 export class GetWalletUseCase {
   constructor(
     private readonly walletRepository: WalletRepository,
     private readonly ledgerRepository: LedgerRepository,
+    private readonly virtualAccountRepository: VirtualAccountRepository,
   ) {}
 
   async execute(userId: string) {
@@ -21,6 +23,10 @@ export class GetWalletUseCase {
 
     const balance = await this.ledgerRepository.getBalance(wallet.accountId);
 
+    const virtualAccount = await this.virtualAccountRepository.findByWalletId(
+      wallet.id!,
+    );
+
     return {
       walletId: wallet.id,
       currency: wallet.currency,
@@ -29,6 +35,13 @@ export class GetWalletUseCase {
       // JSON.stringify throws on bigint).
       minorUnits: balance.minorUnits.toString(),
       balance: Money.of(balance.minorUnits, balance.currency).toString(),
+      virtualAccount: virtualAccount
+        ? {
+            accountNumber: virtualAccount.accountNumber,
+            bankCode: virtualAccount.bankCode,
+            bankName: virtualAccount.bankName,
+          }
+        : null,
     };
   }
 }

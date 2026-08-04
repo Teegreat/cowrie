@@ -20,6 +20,7 @@ const AUDIT_ACTIONS = [
   'COMPLIANCE_CASE_RESOLVED',
   'BVN_REVEALED',
   'WALLET_CREATED',
+  'VIRTUAL_ACCOUNT_CREATED',
 ] as const;
 
 export class AuditLogQueryDto {

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
 import { TransactionContext } from 'src/common/transaction/transaction-manager.port';
 import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
+import { DomainException } from 'src/shared-kernel/domain-exception';
 import { WalletRepository } from 'src/wallet/application/ports/wallet-repository.port';
 import { Wallet } from 'src/wallet/domain/wallet';
 
@@ -15,10 +16,7 @@ export class PrismaWalletRepository extends WalletRepository {
     return (ctx as Prisma.TransactionClient | undefined) ?? this.prisma;
   }
 
-  async findByUserId(
-    userId: string,
-    ctx?: TransactionContext,
-  ): Promise<Wallet | null> {
+  async findByUserId(userId: string): Promise<Wallet | null> {
     const record = await this.prisma.wallet.findUnique({ where: { userId } });
     return record ? Wallet.existing(record) : null;
   }
@@ -38,7 +36,7 @@ export class PrismaWalletRepository extends WalletRepository {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new Error('Wallet already exists for this user');
+        throw new DomainException('A wallet already exists for this account');
       }
       throw error;
     }

@@ -12,7 +12,8 @@ export type AuditAction =
   | 'KYC_TIER_UPGRADED'
   | 'COMPLIANCE_CASE_RESOLVED'
   | 'BVN_REVEALED'
-  | 'WALLET_CREATED';
+  | 'WALLET_CREATED'
+  | 'VIRTUAL_ACCOUNT_CREATED';
 
 export class AuditLog {
   private constructor(
