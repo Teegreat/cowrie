@@ -41,4 +41,13 @@ export class PrismaVirtualAccountRepository extends VirtualAccountRepository {
       throw error;
     }
   }
+
+  async findByAccountNumber(
+    accountNumber: string,
+  ): Promise<VirtualAccount | null> {
+    const record = await this.prisma.virtualAccount.findUnique({
+      where: { accountNumber },
+    });
+    return record ? VirtualAccount.existing(record) : null;
+  }
 }

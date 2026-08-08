@@ -10,9 +10,16 @@ export abstract class LedgerRepository {
     },
     ctx?: TransactionContext,
   ): Promise<string>;
-  abstract saveTransaction(transaction: LedgerTransaction): Promise<string>;
+  abstract saveTransaction(
+    transaction: LedgerTransaction,
+    ctx?: TransactionContext,
+  ): Promise<string>;
   abstract getBalance(
     accountId: string,
     ctx?: TransactionContext,
   ): Promise<{ minorUnits: bigint; currency: string }>;
+  abstract findAccountByName(
+    name: string,
+    currency: string,
+  ): Promise<{ id: string } | null>;
 }

@@ -4,4 +4,5 @@ import { TransactionContext } from 'src/common/transaction/transaction-manager.p
 export abstract class WalletRepository {
   abstract findByUserId(userId: string): Promise<Wallet | null>;
   abstract create(wallet: Wallet, ctx?: TransactionContext): Promise<Wallet>;
+  abstract findById(id: string): Promise<Wallet | null>;
 }

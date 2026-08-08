@@ -45,6 +45,7 @@ enum ComplianceCaseStatus {
   RESOLVED
 }
 
+
 enum AuditAction {
   USER_REGISTERED
   USER_LOGGED_IN
@@ -56,6 +57,17 @@ enum AuditAction {
   BVN_REVEALED
   WALLET_CREATED
   VIRTUAL_ACCOUNT_CREATED
+  DEPOSIT_RECEIVED
+  WITHDRAWAL_INITIATED
+  WITHDRAWAL_SUCCEEDED
+  WITHDRAWAL_FAILED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  SUCCESSFUL
+  FAILED
 }
 
 model Account {
@@ -66,6 +78,8 @@ model Account {
   postings    Posting[]
   wallet      Wallet?
   createdAt   DateTime    @default(now())
+
+  @@unique([name, currency])
 }
 
 model LedgerTransaction {
@@ -178,6 +192,8 @@ model Wallet {
   currency       String
   virtualAccount VirtualAccount?
   createdAt      DateTime        @default(now())
+  deposits       Deposit[]
+  withdrawals    Withdrawal[]
 }
 
 model VirtualAccount {
@@ -188,4 +204,37 @@ model VirtualAccount {
   bankCode      String
   bankName      String
   createdAt     DateTime @default(now())
+}
+
+model Deposit {
+  id                  String   @id @default(uuid())
+  walletId            String
+  wallet              Wallet   @relation(fields: [walletId], references: [id])
+  amountMinorUnits    BigInt
+  currency            String
+  externalReference   String   @unique
+  ledgerTransactionId String
+  createdAt           DateTime @default(now())
+
+  @@index([walletId])
+}
+
+model Withdrawal {
+  id                       String           @id @default(uuid())
+  walletId                 String
+  wallet                   Wallet           @relation(fields: [walletId], references: [id])
+  amountMinorUnits         BigInt
+  currency                 String
+  destinationAccountNumber String
+  destinationBankCode      String
+  status                   WithdrawalStatus @default(PENDING)
+  idempotencyKey           String           @unique
+  externalReference        String?           @unique
+  reservationTransactionId String
+  resolutionTransactionId  String?
+  failureReason            String?
+  createdAt                DateTime         @default(now())
+  resolvedAt               DateTime?
+
+  @@index([walletId])
 }

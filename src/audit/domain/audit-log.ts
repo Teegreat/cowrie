@@ -13,7 +13,11 @@ export type AuditAction =
   | 'COMPLIANCE_CASE_RESOLVED'
   | 'BVN_REVEALED'
   | 'WALLET_CREATED'
-  | 'VIRTUAL_ACCOUNT_CREATED';
+  | 'VIRTUAL_ACCOUNT_CREATED'
+  | 'WITHDRAWAL_INITIATED'
+  | 'WITHDRAWAL_SUCCEEDED'
+  | 'WITHDRAWAL_FAILED'
+  | 'DEPOSIT_RECEIVED';
 
 export class AuditLog {
   private constructor(

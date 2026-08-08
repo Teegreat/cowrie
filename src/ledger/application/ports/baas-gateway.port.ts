@@ -3,6 +3,11 @@
 // connection at all. Abstract class, not a TS `interface`, because
 // interfaces vanish at runtime and can't be used as a NestJS DI token.
 
+export type ExternalTransferOutcome =
+  | { status: 'SUCCESSFUL'; externalReference: string }
+  | { status: 'FAILED'; reason: string }
+  | { status: 'UNKNOWN' };
+
 export interface VirtualAccountDetails {
   accountNumber: string;
   bankCode: string;
@@ -14,4 +19,11 @@ export abstract class BaaSGateway {
     reference: string;
     accountName: string;
   }): Promise<VirtualAccountDetails>;
+  abstract initiateExternalTransfer(input: {
+    idempotencyKey: string;
+    amountMinorUnits: bigint;
+    currency: string;
+    destinationAccountNumber: string;
+    destinationBankCode: string;
+  }): Promise<ExternalTransferOutcome>;
 }

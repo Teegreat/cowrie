@@ -61,15 +61,25 @@ export class PrismaLedgerRepository extends LedgerRepository {
     return { minorUnits, currency: account.currency };
   }
 
-  async saveTransaction(transaction: LedgerTransaction): Promise<string> {
+  async saveTransaction(
+    transaction: LedgerTransaction,
+    ctx?: TransactionContext,
+  ): Promise<string> {
     const accountIds = [
       ...new Set(transaction.postings.map((p) => p.accountId)),
     ];
 
-    // An interactive transaction: everything inside `tx` is one atomic
-    // unit. Throwing here rolls back automatically — nothing gets
-    // written if any referenced account doesn't exist.
-    return this.prisma.$transaction(async (tx) => {
+    const run = ctx
+      ? (fn: (tx: Prisma.TransactionClient) => Promise<string>) =>
+          fn(ctx as Prisma.TransactionClient)
+      : (fn: (tx: Prisma.TransactionClient) => Promise<string>) =>
+          this.prisma.$transaction(fn);
+
+    return run(async (tx) => {
+      // An interactive transaction: everything inside `tx` is one atomic
+      // unit. Throwing here rolls back automatically — nothing gets
+      // written if any referenced account doesn't exist.
+
       // FOR UPDATE locks these rows for the rest of this transaction.
       // We don't need their data — this is a mutex: any other
       // transaction trying to lock the same accounts must wait until
@@ -139,6 +149,15 @@ export class PrismaLedgerRepository extends LedgerRepository {
       });
 
       return created.id;
+    });
+  }
+
+  async findAccountByName(
+    name: string,
+    currency: string,
+  ): Promise<{ id: string } | null> {
+    return this.client().account.findUnique({
+      where: { name_currency: { name, currency } },
     });
   }
 }

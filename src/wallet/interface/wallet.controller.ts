@@ -7,6 +7,8 @@ import { Throttle } from '@nestjs/throttler';
 import { CreateVirtualAccountDto } from './dto/create-virtual-account.dto';
 import { RetryVirtualAccountProvisioningUseCase } from '../application/use-cases/retry-virtual-account-provisioning.use-case';
 import type { Request } from 'express';
+import { InitiateWithdrawalUseCase } from '../application/use-cases/initiate-withdrawal.use-case';
+import { InitiateWithdrawalDto } from './dto/initiate-withdrawal.dto';
 
 @ApiTags('wallet')
 @ApiBearerAuth()
@@ -16,6 +18,7 @@ export class WalletController {
   constructor(
     private readonly getWallet: GetWalletUseCase,
     private readonly retryVirtualAccountProvisioning: RetryVirtualAccountProvisioningUseCase,
+    private readonly initiateWithdrawalUseCase: InitiateWithdrawalUseCase,
   ) {}
 
   @ApiOperation({ summary: 'Get your own wallet and current balance' })
@@ -42,5 +45,38 @@ export class WalletController {
       req.ip ?? null,
       req.headers['user-agent'] ?? null,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Initiate a withdrawal to an external bank account',
+    description:
+      'Reserves funds immediately, then attempts the external transfer. Requires a client-generated idempotency key.',
+  })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('withdrawals')
+  async initiateWithdrawal(
+    @Body() dto: InitiateWithdrawalDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    const withdrawal = await this.initiateWithdrawalUseCase.execute({
+      userId: user.id,
+      amountMinorUnits: BigInt(dto.amountMinorUnits),
+      currency: dto.currency,
+      destinationAccountNumber: dto.destinationAccountNumber,
+      destinationBankCode: dto.destinationBankCode,
+      idempotencyKey: dto.idempotencyKey,
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+    return {
+      id: withdrawal.id,
+      status: withdrawal.status,
+      amountMinorUnits: withdrawal.amountMinorUnits.toString(),
+      currency: withdrawal.currency,
+      destinationAccountNumber: withdrawal.destinationAccountNumber,
+      destinationBankCode: withdrawal.destinationBankCode,
+      failureReason: withdrawal.failureReason,
+    };
   }
 }

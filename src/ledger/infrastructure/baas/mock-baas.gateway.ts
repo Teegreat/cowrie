@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import {
   BaaSGateway,
+  ExternalTransferOutcome,
   VirtualAccountDetails,
 } from 'src/ledger/application/ports/baas-gateway.port';
 
@@ -52,5 +53,28 @@ export class MockBaaSGateway extends BaaSGateway {
     const remainder = sum % 10;
     const checkDigit = remainder === 0 ? 0 : 10 - remainder;
     return `${serial}${checkDigit}`;
+  }
+
+  initiateExternalTransfer(input: {
+    idempotencyKey: string;
+    amountMinorUnits: bigint;
+    currency: string;
+    destinationAccountNumber: string;
+    destinationBankCode: string;
+  }): Promise<ExternalTransferOutcome> {
+    const suffix = input.destinationAccountNumber.slice(-2);
+    if (suffix === '01') {
+      return Promise.resolve({
+        status: 'FAILED',
+        reason: 'Account name mismatch',
+      });
+    }
+    if (suffix === '02') {
+      return Promise.resolve({ status: 'UNKNOWN' });
+    }
+    return Promise.resolve({
+      status: 'SUCCESSFUL',
+      externalReference: `MOCK-${input.idempotencyKey}`,
+    });
   }
 }
