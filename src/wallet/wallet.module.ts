@@ -14,6 +14,7 @@ import { BaasWebhookController } from './interface/baas-webhook.controller';
 import { DepositRepository } from './application/ports/deposit-repository.port';
 import { PrismaDepositRepository } from './infrastructure/persistence/prisma-deposit.repository';
 import { WithdrawalRepository } from './application/ports/withdrawal-repository.port';
+import { PrismaWithdrawalRepository } from './infrastructure/persistence/prisma-withdrawal.repository';
 import { ProcessDepositUseCase } from './application/use-cases/process-deposit.use-case';
 import { InitiateWithdrawalUseCase } from './application/use-cases/initiate-withdrawal.use-case';
 import { AttemptExternalTransferUseCase } from './application/use-cases/attempt-external-transfer.use-case';
@@ -31,7 +32,7 @@ import { ReleaseWithdrawalUseCase } from './application/use-cases/release-withdr
       useClass: PrismaVirtualAccountRepository,
     },
     { provide: DepositRepository, useClass: PrismaDepositRepository },
-    { provide: WithdrawalRepository, useClass: PrismaWalletRepository },
+    { provide: WithdrawalRepository, useClass: PrismaWithdrawalRepository },
     CreateWalletUseCase,
     GetWalletUseCase,
     CreateVirtualAccountUseCase,
