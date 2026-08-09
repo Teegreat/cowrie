@@ -122,4 +122,4 @@ This project is built chapter by chapter against a 47-chapter curriculum. Chapte
 
 ## License
 
-Private, unpublished. Not licensed for reuse.
+Public repository, shared for learning and portfolio purposes. No license is granted for reuse, modification, or distribution.
