@@ -17,7 +17,8 @@ export type AuditAction =
   | 'WITHDRAWAL_INITIATED'
   | 'WITHDRAWAL_SUCCEEDED'
   | 'WITHDRAWAL_FAILED'
-  | 'DEPOSIT_RECEIVED';
+  | 'DEPOSIT_RECEIVED'
+  | 'TRANSFER_SENT';
 
 export class AuditLog {
   private constructor(

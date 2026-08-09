@@ -12,7 +12,11 @@ export class CreateWalletUseCase {
     private readonly ledgerRepository: LedgerRepository,
   ) {}
 
-  async execute(userId: string, ctx: TransactionContext): Promise<Wallet> {
+  async execute(
+    userId: string,
+    phoneNumber: string,
+    ctx: TransactionContext,
+  ): Promise<Wallet> {
     const existing = await this.walletRepository.findByUserId(userId);
     if (existing) {
       throw new DomainException('A wallet already exists for this account');
@@ -30,7 +34,12 @@ export class CreateWalletUseCase {
       ctx,
     );
 
-    const wallet = Wallet.open({ userId, accountId, currency: 'NGN' });
+    const wallet = Wallet.open({
+      userId,
+      accountId,
+      currency: 'NGN',
+      phoneNumber,
+    });
     return this.walletRepository.create(wallet, ctx);
   }
 }

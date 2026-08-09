@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiHeader,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/identity/interface/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/identity/interface/decorators/current-user.decorator';
 import { GetWalletUseCase } from '../application/use-cases/get-wallet.use-case';
@@ -9,6 +14,9 @@ import { RetryVirtualAccountProvisioningUseCase } from '../application/use-cases
 import type { Request } from 'express';
 import { InitiateWithdrawalUseCase } from '../application/use-cases/initiate-withdrawal.use-case';
 import { InitiateWithdrawalDto } from './dto/initiate-withdrawal.dto';
+import { InitiateTransferUseCase } from '../application/use-cases/initiate-transfer.use-case';
+import { InitiateTransferDto } from './dto/initiate-transfer.dto';
+import { StepUpGuard } from 'src/identity/interface/guards/step-up.guard';
 
 @ApiTags('wallet')
 @ApiBearerAuth()
@@ -19,6 +27,7 @@ export class WalletController {
     private readonly getWallet: GetWalletUseCase,
     private readonly retryVirtualAccountProvisioning: RetryVirtualAccountProvisioningUseCase,
     private readonly initiateWithdrawalUseCase: InitiateWithdrawalUseCase,
+    private readonly initiateTransferUseCase: InitiateTransferUseCase,
   ) {}
 
   @ApiOperation({ summary: 'Get your own wallet and current balance' })
@@ -77,6 +86,45 @@ export class WalletController {
       destinationAccountNumber: withdrawal.destinationAccountNumber,
       destinationBankCode: withdrawal.destinationBankCode,
       failureReason: withdrawal.failureReason,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Send money to another Cowrie wallet by phone number',
+    description:
+      'On-us transfer — settles instantly, no external rail. Requires step-up verification on every transfer, no threshold.',
+  })
+  @ApiHeader({
+    name: 'X-Step-Up-Token',
+    description:
+      'A step-up token obtained from POST /identity/step-up, valid for 5 minutes.',
+    required: true,
+  })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard, StepUpGuard)
+  @Post('transfers')
+  async initiateTransfer(
+    @Body() dto: InitiateTransferDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    const transfer = await this.initiateTransferUseCase.execute({
+      senderUserId: user.id,
+      recipientPhoneNumber: dto.recipientPhoneNumber,
+      amountMinorUnits: BigInt(dto.amountMinorUnits),
+      currency: dto.currency,
+      narration: dto.narration ?? null,
+      idempotencyKey: dto.idempotencyKey,
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+    return {
+      id: transfer.id,
+      senderWalletId: transfer.senderWalletId,
+      recipientWalletId: transfer.recipientWalletId,
+      amountMinorUnits: transfer.amountMinorUnits.toString(),
+      currency: transfer.currency,
+      narration: transfer.narration,
     };
   }
 }

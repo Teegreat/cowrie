@@ -45,7 +45,6 @@ enum ComplianceCaseStatus {
   RESOLVED
 }
 
-
 enum AuditAction {
   USER_REGISTERED
   USER_LOGGED_IN
@@ -61,6 +60,7 @@ enum AuditAction {
   WITHDRAWAL_INITIATED
   WITHDRAWAL_SUCCEEDED
   WITHDRAWAL_FAILED
+  TRANSFER_SENT
 }
 
 enum WithdrawalStatus {
@@ -184,16 +184,36 @@ model AuditLog {
 }
 
 model Wallet {
-  id             String          @id @default(uuid())
-  userId         String          @unique
-  user           User            @relation(fields: [userId], references: [id])
-  accountId      String          @unique
-  account        Account         @relation(fields: [accountId], references: [id])
-  currency       String
-  virtualAccount VirtualAccount?
-  createdAt      DateTime        @default(now())
-  deposits       Deposit[]
-  withdrawals    Withdrawal[]
+  id                String          @id @default(uuid())
+  userId            String          @unique
+  user              User            @relation(fields: [userId], references: [id])
+  accountId         String          @unique
+  account           Account         @relation(fields: [accountId], references: [id])
+  currency          String
+  phoneNumber       String          @unique
+  virtualAccount    VirtualAccount?
+  deposits          Deposit[]
+  withdrawals       Withdrawal[]
+  sentTransfers     Transfer[]      @relation("TransferSender")
+  receivedTransfers Transfer[]      @relation("TransferRecipient")
+  createdAt         DateTime        @default(now())
+}
+
+model Transfer {
+  id                  String   @id @default(uuid())
+  senderWalletId      String
+  senderWallet        Wallet   @relation("TransferSender", fields: [senderWalletId], references: [id])
+  recipientWalletId   String
+  recipientWallet     Wallet   @relation("TransferRecipient", fields: [recipientWalletId], references: [id])
+  amountMinorUnits    BigInt
+  currency            String
+  idempotencyKey      String   @unique
+  ledgerTransactionId String
+  narration           String?
+  createdAt           DateTime @default(now())
+
+  @@index([senderWalletId])
+  @@index([recipientWalletId])
 }
 
 model VirtualAccount {
@@ -229,7 +249,7 @@ model Withdrawal {
   destinationBankCode      String
   status                   WithdrawalStatus @default(PENDING)
   idempotencyKey           String           @unique
-  externalReference        String?           @unique
+  externalReference        String?          @unique
   reservationTransactionId String
   resolutionTransactionId  String?
   failureReason            String?

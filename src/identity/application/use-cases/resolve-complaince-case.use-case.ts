@@ -63,6 +63,7 @@ export class ResolveComplianceCaseUseCase {
         if (!existingWallet) {
           const wallet = await this.createWalletUseCase.execute(
             resolved.userId,
+            profile!.phoneNumber,
             ctx,
           );
           await this.auditLogRepository.create(

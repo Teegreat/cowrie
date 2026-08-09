@@ -20,9 +20,24 @@ import { InitiateWithdrawalUseCase } from './application/use-cases/initiate-with
 import { AttemptExternalTransferUseCase } from './application/use-cases/attempt-external-transfer.use-case';
 import { SettleWithdrawalUseCase } from './application/use-cases/settle-withdrawal.use-case';
 import { ReleaseWithdrawalUseCase } from './application/use-cases/release-withdrawal.use-case';
+import { TransferRepository } from './application/ports/transfer-repository.port';
+import { PrismaTransferRepository } from './infrastructure/persistence/prisma-transfer.repository';
+import { InitiateTransferUseCase } from './application/use-cases/initiate-transfer.use-case';
+import { JwtModule } from '@nestjs/jwt';
+import { StepUpGuard } from 'src/identity/interface/guards/step-up.guard';
 
 @Module({
-  imports: [LedgerModule, AuditModule],
+  imports: [
+    LedgerModule,
+    AuditModule,
+
+    JwtModule.registerAsync({
+      useFactory: () => ({
+        secret: process.env.JWT_SECRET,
+        signOptions: { expiresIn: '15m' },
+      }),
+    }),
+  ],
   controllers: [WalletController, BaasWebhookController],
   providers: [
     { provide: WalletRepository, useClass: PrismaWalletRepository },
@@ -33,6 +48,7 @@ import { ReleaseWithdrawalUseCase } from './application/use-cases/release-withdr
     },
     { provide: DepositRepository, useClass: PrismaDepositRepository },
     { provide: WithdrawalRepository, useClass: PrismaWithdrawalRepository },
+    { provide: TransferRepository, useClass: PrismaTransferRepository },
     CreateWalletUseCase,
     GetWalletUseCase,
     CreateVirtualAccountUseCase,
@@ -42,6 +58,8 @@ import { ReleaseWithdrawalUseCase } from './application/use-cases/release-withdr
     AttemptExternalTransferUseCase,
     SettleWithdrawalUseCase,
     ReleaseWithdrawalUseCase,
+    InitiateTransferUseCase,
+    StepUpGuard,
   ],
   exports: [CreateWalletUseCase, WalletRepository, CreateVirtualAccountUseCase],
 })

@@ -28,6 +28,7 @@ export class PrismaWalletRepository extends WalletRepository {
           userId: wallet.userId,
           accountId: wallet.accountId,
           currency: wallet.currency,
+          phoneNumber: wallet.phoneNumber,
         },
       });
       return Wallet.existing(created);
@@ -44,6 +45,13 @@ export class PrismaWalletRepository extends WalletRepository {
   async findById(id: string): Promise<Wallet | null> {
     const record = await this.prisma.wallet.findUnique({
       where: { id },
+    });
+    return record ? Wallet.existing(record) : null;
+  }
+
+  async findByPhoneNumber(phoneNumber: string): Promise<Wallet | null> {
+    const record = await this.prisma.wallet.findUnique({
+      where: { phoneNumber },
     });
     return record ? Wallet.existing(record) : null;
   }

@@ -76,6 +76,7 @@ export class CreateProfileUseCase {
         if (created.screeningStatus !== 'BLOCKED') {
           const wallet = await this.createWalletUseCase.execute(
             created.userId,
+            created.phoneNumber,
             ctx,
           );
           walletId = wallet.id ?? null;

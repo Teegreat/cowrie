@@ -24,6 +24,7 @@ const AUDIT_ACTIONS = [
   'WITHDRAWAL_INITIATED',
   'WITHDRAWAL_SUCCEEDED',
   'WITHDRAWAL_FAILED',
+  'TRANSFER_SENT',
 ] as const;
 
 export class AuditLogQueryDto {

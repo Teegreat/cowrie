@@ -4,6 +4,7 @@ export class Wallet {
     readonly userId: string,
     readonly accountId: string,
     readonly currency: string,
+    readonly phoneNumber: string,
     readonly createdAt: Date,
   ) {}
 
@@ -13,12 +14,14 @@ export class Wallet {
     userId: string;
     accountId: string;
     currency: string;
+    phoneNumber: string;
   }): Wallet {
     return new Wallet(
       undefined,
       input.userId,
       input.accountId,
       input.currency,
+      input.phoneNumber,
       new Date(),
     );
   }
@@ -28,6 +31,7 @@ export class Wallet {
     userId: string;
     accountId: string;
     currency: string;
+    phoneNumber: string;
     createdAt: Date;
   }): Wallet {
     return new Wallet(
@@ -35,6 +39,7 @@ export class Wallet {
       input.userId,
       input.accountId,
       input.currency,
+      input.phoneNumber,
       input.createdAt,
     );
   }
