@@ -98,4 +98,11 @@ export class PrismaWithdrawalRepository extends WithdrawalRepository {
       },
     });
   }
+
+  async findAllProcessing(): Promise<Withdrawal[]> {
+    const records = await this.prisma.withdrawal.findMany({
+      where: { status: 'PROCESSING' },
+    });
+    return records.map((r) => Withdrawal.existing(r));
+  }
 }

@@ -7,6 +7,7 @@ import { IdentityModule } from './identity/identity.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { TransactionModule } from './common/transaction/transaction.module';
+import { ReconciliationModule } from './reconciliation/reconciliation.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { TransactionModule } from './common/transaction/transaction.module';
     PrismaModule,
     IdentityModule,
     TransactionModule,
+    ReconciliationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

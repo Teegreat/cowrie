@@ -26,4 +26,12 @@ export abstract class BaaSGateway {
     destinationAccountNumber: string;
     destinationBankCode: string;
   }): Promise<ExternalTransferOutcome>;
+
+  abstract checkTransferStatus(
+    reference: string,
+  ): Promise<ExternalTransferOutcome>;
+  abstract getAccountBalance(): Promise<{
+    minorUnits: bigint;
+    currency: string;
+  }>;
 }

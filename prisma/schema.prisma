@@ -61,6 +61,7 @@ enum AuditAction {
   WITHDRAWAL_SUCCEEDED
   WITHDRAWAL_FAILED
   TRANSFER_SENT
+  RECONCILIATION_RUN_COMPLETED
 }
 
 enum WithdrawalStatus {
@@ -69,6 +70,32 @@ enum WithdrawalStatus {
   SUCCESSFUL
   FAILED
 }
+
+enum ReconciliationDiscrepancyType {
+  STUCK_WITHDRAWAL_RESOLVED
+  BALANCE_MISMATCH
+}
+
+model ReconciliationRun {
+  id                 String   @id @default(uuid())
+  startedAt          DateTime @default(now())
+  completedAt        DateTime?
+  discrepancyCount   Int      @default(0)
+  discrepancies      ReconciliationDiscrepancy[]
+}
+
+model ReconciliationDiscrepancy {
+  id          String                       @id @default(uuid())
+  runId       String
+  run         ReconciliationRun            @relation(fields: [runId], references: [id])
+  type        ReconciliationDiscrepancyType
+  description String
+  metadata    Json?
+  createdAt   DateTime                     @default(now())
+
+  @@index([runId])
+}
+
 
 model Account {
   id          String      @id @default(uuid())

@@ -77,4 +77,25 @@ export class MockBaaSGateway extends BaaSGateway {
       externalReference: `MOCK-${input.idempotencyKey}`,
     });
   }
+
+  checkTransferStatus(reference: string): Promise<ExternalTransferOutcome> {
+    // Simulates "ask again later, it resolved" — lets the reconciliation
+    // resolution path be exercised without real credentials.
+    return Promise.resolve({
+      status: 'SUCCESSFUL',
+      externalReference: `MOCK_REQUERY-${reference}`,
+    });
+  }
+
+  getAccountBalance(): Promise<{ minorUnits: bigint; currency: string }> {
+    // The mock has no real external ledger to query. Reads a
+    // configurable override so the mismatch-detection path can be
+    // deliberately exercised (see Testing Strategy) — defaults to 0,
+    // which will flag a mismatch the moment any deposit has occurred.
+    const override = process.env.MOCK_BAAS_ACCOUNT_BALANCE_MINOR_UNITS;
+    return Promise.resolve({
+      minorUnits: override ? BigInt(override) : 0n,
+      currency: 'NGN',
+    });
+  }
 }

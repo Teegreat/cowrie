@@ -61,6 +61,13 @@ import { StepUpGuard } from 'src/identity/interface/guards/step-up.guard';
     InitiateTransferUseCase,
     StepUpGuard,
   ],
-  exports: [CreateWalletUseCase, WalletRepository, CreateVirtualAccountUseCase],
+  exports: [
+    CreateWalletUseCase,
+    WalletRepository,
+    CreateVirtualAccountUseCase,
+    SettleWithdrawalUseCase,
+    ReleaseWithdrawalUseCase,
+    WithdrawalRepository,
+  ],
 })
 export class WalletModule {}

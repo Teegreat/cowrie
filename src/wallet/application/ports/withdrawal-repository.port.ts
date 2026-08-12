@@ -23,4 +23,5 @@ export abstract class WithdrawalRepository {
     failureReason: string,
     ctx?: TransactionContext,
   ): Promise<void>;
+  abstract findAllProcessing(): Promise<Withdrawal[]>;
 }
